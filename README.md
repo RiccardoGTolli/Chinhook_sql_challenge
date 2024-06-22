@@ -1,4 +1,4 @@
-# Chinhook_sql_challenge - Riccardo
+# chinook_sql_challenge - Riccardo
 
 
 
@@ -13,10 +13,10 @@
 
 
 
-The files for the first and second task are all contained in revo/notebooks.
+The files for the first and second task are all contained in chinook/notebooks.
 To get access you should run the container in development mode i.e. in the docker-compose.yml, you should have target: development (default).
 
-The third task consists in the Docker app itself and all the files in revo/modules.
+The third task consists in the Docker app itself and all the files in chinook/modules.
 You can inspect and execute the files in development mode just fine but if you want the docker container to auto-execute the main.py you should run the container with target: production.
 
 ## Run the container
@@ -31,7 +31,7 @@ Jupyter is exposed on port 8888, to access the service you need the token.
 
 How to get the token:
 ```bash
-docker compose exec revo jupyter server list
+docker compose exec chinook jupyter server list
 ```
 The token will change everytime the container is restarted.
 
@@ -51,7 +51,7 @@ method 2: Within the IDE e.g. VsCode
 Once the container is running (with docker compose up) you can gain access to the container shell with:
 
 ```bash
-docker compose exec revo bash
+docker compose exec chinook bash
 ```
 
 ## Run the app from start to finish
@@ -70,7 +70,7 @@ Method 2: Gain access to container shell and execute main.py manually.
 With 'target: development': 
 ```bash
 docker compose up --build -d
-docker compose exec revo bash
+docker compose exec chinook bash
 ```
 Then execute main.py manually:
 ```bash
@@ -85,7 +85,7 @@ From inside container, run `format` and `code-checks`.
 
 This has been done just for illustrative purposes, only a single function was unit tested: `ml_helpers.get_year_quarter_combos`.
 You can run the test like so:
-1. Gain access to the container CLI: `docker compose exec revo bash`
+1. Gain access to the container CLI: `docker compose exec chinook bash`
 2. Then execute the test with : `python3 modules/test_ml_helpers.py`
 
 ## Description of the app
