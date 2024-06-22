@@ -1,0 +1,2 @@
+alias format='bash static_test/format.sh'
+alias code-checks='bash static_test/code-checks.sh'
