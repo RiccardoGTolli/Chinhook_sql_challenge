@@ -17,7 +17,6 @@ services:
     volumes:
       - ./chinook/modules/:/chinook/modules/
       - ./chinook/notebooks/:/chinook/notebooks/
-      - ./chinook/output/:/chinook/output/
     ports:
       - $JUPYTER_PORT_APP:8888
     env_file:

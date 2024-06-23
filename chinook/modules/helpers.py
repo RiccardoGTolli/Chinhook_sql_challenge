@@ -5,9 +5,9 @@ from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 import numpy as np
 from scipy.stats import mode
-from sklearn.model_selection import train_test_split
 from xgboost import XGBRegressor
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_absolute_error
+import shap
 
 def pareto_chart(df, values:str, grouping:str, title:str, topn:int=None):
     '''Shows to console a pareto chart using the values and grouping.
@@ -53,6 +53,7 @@ def pareto_chart(df, values:str, grouping:str, title:str, topn:int=None):
     ax2.legend(lines + lines2, labels + labels2, loc='upper left')
 
     plt.show()
+    plt.clf()  # Clears the figure
 
 
 def feature_extraction(df:pd.DataFrame):
@@ -171,6 +172,7 @@ def kmeans_clustering_elbow(df):
     plt.xlabel('Number of Clusters')
     plt.ylabel('SSE (Sum of Squared Errors)')
     plt.show()
+    plt.clf()  # Clears the figure
     
 def kmeans_clustering(df,clusters=5):
     kmeans = KMeans(n_clusters=clusters, random_state=42)
@@ -199,6 +201,7 @@ def plot_clusters(df, cluster_labels):
     plt.legend()
     plt.grid(True)
     plt.show()
+    plt.clf()  # Clears the figure
 
 def get_mode(series):
     # This function returns the first mode if there are multiple modes.
@@ -254,29 +257,66 @@ def predict_total_spent(df):
     # One-hot encode categorical features directly using pandas
     df_encoded = pd.get_dummies(df, columns=categorical_features, drop_first=True)
     
+    # Sanitize column names to be compatible with XGBoost
+    sanitized_columns = sanitize_column_names(df_encoded.columns)
+    df_encoded.columns = sanitized_columns
+    
     # Split the data into features and target variable
     X = df_encoded.drop('total_spent', axis=1)
-    y = df_encoded['total_spent']
+    y = df_encoded[['total_spent']]
 
-    # Split the data into training and testing sets
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
+    # We dont need to split into train and test because we are using total_spent as proxy for CLV (Customer Lifetime Value) 
+    # Lets apply the model on the entire dataset
     # Initialize the XGBoost regressor
     model = XGBRegressor(objective='reg:squarederror', n_estimators=100, learning_rate=0.1, random_state=42)
-
-    # Train the model on the training data
-    model.fit(X_train, y_train)
-
-    # Predict on the entire dataset
+    model.fit(X, y)
+    # Predict on entire dataset
     predictions = model.predict(X)
-    df_encoded['predicted_total_spent'] = predictions
-
     # Calculate MAE
     mae = mean_absolute_error(y, predictions)
-
     # Merge the predictions and MAE back to the original dataframe to retain original categorical data
-    df_final = df.copy()
-    df_final['predicted_total_spent'] = df_encoded['predicted_total_spent']
-    df_final['MAE'] = mae  # Add a constant column with the MAE value
+    df['predicted_total_spent'] = predictions
+    df['MAE'] = mae
+    
+    return df, model, X
 
-    return df_final
+
+def sanitize_column_names(columns):
+    """ Sanitize column names to make them compatible with XGBoost. """
+    return [col.replace('[', '_').replace(']', '_').replace('<', '_') for col in columns]
+
+
+def plot_predicted_vs_actual(actual, predicted):
+    """
+    Plots predicted values against actual values with a diagonal line that represents perfect predictions.
+
+    Parameters:
+    - actual (array-like): Array of actual values.
+    - predicted (array-like): Array of predicted values.
+    """
+    plt.figure(figsize=(10, 8))
+    plt.scatter(predicted, actual, alpha=0.5, color='blue', label='Predicted vs. Actual')  # Scatter plot
+    plt.title('Predicted vs Actual Values')
+    plt.xlabel('Predicted Values')
+    plt.ylabel('Actual Values')
+
+    # Draw a diagonal line (perfect predictions line)
+    max_val = max(max(actual), max(predicted))
+    min_val = min(min(actual), min(predicted))
+    plt.plot([min_val, max_val], [min_val, max_val], color='red', linestyle='--', label='Line of Perfect Prediction')
+
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+    plt.clf()  # Clears the figure
+    
+def plot_shap_absmean(model,X):
+    X=X.astype('float')
+    # Compute SHAP values
+    explainer = shap.Explainer(model, X)
+    shap_values = explainer(X)
+
+    # SHAP Summary Plot (Mean SHAP values)
+    shap.summary_plot(shap_values, X, plot_type="bar")
+    plt.clf()  # Clears the figure
