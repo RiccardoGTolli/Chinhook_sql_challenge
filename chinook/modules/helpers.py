@@ -5,6 +5,9 @@ from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 import numpy as np
 from scipy.stats import mode
+from sklearn.model_selection import train_test_split
+from xgboost import XGBRegressor
+from sklearn.metrics import mean_squared_error
 
 def pareto_chart(df, values:str, grouping:str, title:str, topn:int=None):
     '''Shows to console a pareto chart using the values and grouping.
@@ -229,3 +232,51 @@ def analyze_clusters(df, cluster_labels):
     cluster_summary = pd.concat([cluster_means, cluster_modes], axis=1)
 
     return cluster_summary
+
+
+
+def predict_total_spent(df):
+    """
+    Predicts the 'total_spent' for the entire DataFrame using XGBoost and appends the predictions
+    as a new column. It encodes categorical variables, trains the model on part of the data,
+    and then applies the model to the entire dataset. Additionally, it calculates and appends the MAE.
+
+    Parameters:
+    - df (pd.DataFrame): The input DataFrame with all necessary features and 'total_spent' column.
+
+    Returns:
+    - df_final (pd.DataFrame): The original DataFrame with additional columns 'predicted_total_spent'
+                               and a constant column 'MAE' showing the mean absolute error.
+    """
+    # Identify categorical columns
+    categorical_features = df.select_dtypes(include=['object', 'category']).columns.tolist()
+    
+    # One-hot encode categorical features directly using pandas
+    df_encoded = pd.get_dummies(df, columns=categorical_features, drop_first=True)
+    
+    # Split the data into features and target variable
+    X = df_encoded.drop('total_spent', axis=1)
+    y = df_encoded['total_spent']
+
+    # Split the data into training and testing sets
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    # Initialize the XGBoost regressor
+    model = XGBRegressor(objective='reg:squarederror', n_estimators=100, learning_rate=0.1, random_state=42)
+
+    # Train the model on the training data
+    model.fit(X_train, y_train)
+
+    # Predict on the entire dataset
+    predictions = model.predict(X)
+    df_encoded['predicted_total_spent'] = predictions
+
+    # Calculate MAE
+    mae = mean_absolute_error(y, predictions)
+
+    # Merge the predictions and MAE back to the original dataframe to retain original categorical data
+    df_final = df.copy()
+    df_final['predicted_total_spent'] = df_encoded['predicted_total_spent']
+    df_final['MAE'] = mae  # Add a constant column with the MAE value
+
+    return df_final
