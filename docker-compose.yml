@@ -25,7 +25,6 @@ services:
       - ./.env
 
   chinook_db:
-    image: postgres:15.1
     build:
       context: ./
       dockerfile: ./chinook_db/Dockerfile

@@ -8,10 +8,10 @@ ARG GID=1002
 ENV UID=1001
 ENV GID=1002
 
-# Install some basic packages
+# Install some basic packages including SQLite development headers
 RUN apt-get update && apt-get install -y \
     gcc python3-dev \
-    git
+    git 
 
 ENV PYTHONPATH="${PYTHONPATH}:/chinook/"
 

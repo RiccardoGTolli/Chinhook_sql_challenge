@@ -6,6 +6,8 @@
    DB Server: PostgreSql
    Author: Luis Rocha
    License: https://github.com/lerocha/chinook-database/blob/master/LICENSE.md
+
+   A few views have been added by me at the end of the script.
 ********************************************************************************/
 
 /*******************************************************************************
@@ -15869,3 +15871,121 @@ INSERT INTO playlist_track (playlist_id, track_id) VALUES
     (17, 3290),
     (18, 597);
 
+
+
+CREATE VIEW top_employee_by_customers AS
+SELECT 
+    e.employee_id,
+    e.first_name,
+    e.last_name,
+    COUNT(c.customer_id) AS numberofcustomers
+FROM 
+    employee e
+JOIN 
+    customer c ON e.employee_id = c.support_rep_id 
+GROUP BY 
+    e.employee_id, e.first_name, e.last_name
+ORDER BY 
+    numberofcustomers DESC
+LIMIT 1;
+
+
+CREATE VIEW top_customer_by_tracks AS
+SELECT 
+    c.customer_id,
+    c.first_name,
+    c.last_name,
+    COUNT(ii.invoice_line_id) AS number_of_tracks
+FROM 
+    customer c
+JOIN 
+    invoice i ON c.customer_id = i.customer_id
+JOIN 
+    invoice_line ii ON i.invoice_id = ii.invoice_id
+GROUP BY 
+    c.customer_id, c.first_name, c.last_name
+ORDER BY 
+    number_of_tracks DESC
+LIMIT 1;
+
+
+CREATE VIEW top_manager_by_direct_reports AS
+SELECT 
+    e1.employee_id,
+    e1.first_name,
+    e1.last_name,
+    COUNT(e2.employee_id) AS number_of_direct_reports
+FROM 
+    employee e1
+LEFT JOIN 
+    employee e2 ON e1.employee_id = e2.reports_to
+GROUP BY 
+    e1.employee_id, e1.first_name, e1.last_name
+ORDER BY 
+    number_of_direct_reports DESC
+LIMIT 1;
+
+
+CREATE VIEW top_playlists_by_profit AS
+SELECT 
+    p.playlist_id,
+    p.Name AS PlaylistName,
+    SUM(ii.unit_price * ii.quantity) AS TotalProfit
+FROM 
+    playlist p
+JOIN 
+    playlist_track pt ON p.playlist_id = pt.playlist_id
+JOIN 
+    track t ON pt.track_id = t.track_id
+JOIN 
+    invoice_line ii ON t.track_id = ii.track_id
+GROUP BY 
+    p.playlist_id, p.Name
+ORDER BY 
+    TotalProfit DESC
+LIMIT 3;
+
+/*******************************************************************************
+    A consolidated table for analysis purposes.
+    This table brings together several fields from the relational model.
+
+    The group by is there to make the table essentially a list of transactions per customer.
+    Many Joins can impact performance, consider indexing if the dataset were much larger.
+
+    This table can help with two things, strategic inventory management and understanding
+    customer behavior for targeted marketing and promotions based on customer info.
+********************************************************************************/ 
+CREATE VIEW customer_media_consumption AS
+SELECT 
+    c.customer_Id,
+    c.country,
+    c.city,
+    c.state,
+    c.company,
+    mt.name AS media_type,
+    g.name AS genre_name,
+    t.composer,
+    al.title AS album_title,
+    ar.name AS artist_name,
+    COUNT(ii.quantity) AS tracks_purchased,
+    SUM(ii.unit_price * ii.quantity) AS total_spent
+FROM 
+    customer c
+JOIN 
+    invoice i ON c.customer_id = i.customer_id
+JOIN 
+    invoice_line ii ON i.invoice_id = ii.invoice_id
+JOIN 
+    track t ON ii.track_id = t.track_id
+JOIN 
+    album al ON t.album_id = al.album_id
+JOIN 
+    artist ar ON al.artist_id = ar.artist_id
+JOIN 
+    genre g ON t.genre_id = g.genre_id
+JOIN 
+    media_type mt ON t.media_type_id = mt.media_type_id
+GROUP BY 
+    c.customer_id, c.country, c.city, c.state, c.company, mt.name, g.name, t.composer, al.title, ar.name
+ORDER BY 
+    c.customer_id, total_spent DESC;
