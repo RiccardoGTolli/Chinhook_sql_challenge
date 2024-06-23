@@ -15,9 +15,8 @@ services:
     tty: true # docker run -t
     stdin_open: true # docker run -i
     volumes:
-      - ./chinook/modules/:/chinook/modules
+      - ./chinook/modules/:/chinook/modules/
       - ./chinook/notebooks/:/chinook/notebooks/
-      - ./chinook/data/:/chinook/data/
       - ./chinook/output/:/chinook/output/
     ports:
       - $JUPYTER_PORT_APP:8888

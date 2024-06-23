@@ -15967,6 +15967,7 @@ SELECT
     t.composer,
     al.title AS album_title,
     ar.name AS artist_name,
+    i.invoice_date,
     COUNT(ii.quantity) AS tracks_purchased,
     SUM(ii.unit_price * ii.quantity) AS total_spent
 FROM 
@@ -15986,6 +15987,6 @@ JOIN
 JOIN 
     media_type mt ON t.media_type_id = mt.media_type_id
 GROUP BY 
-    c.customer_id, c.country, c.city, c.state, c.company, mt.name, g.name, t.composer, al.title, ar.name
+    c.customer_id, c.country, c.city, c.state, c.company, mt.name, g.name, t.composer, al.title, ar.name,i.invoice_date
 ORDER BY 
     c.customer_id, total_spent DESC;
